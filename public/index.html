@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>اخبار هوش مصنوعی</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/ChatGPT.png" type="image/png">
+</head>
+<body>
+
+<button id="menu-toggle" class="menu-icon">☰</button>
+
+<div id="sidebar">
+  <h3>دسته‌بندی‌ها</h3>
+  <button onclick="filterByTopic('رباتیک')">رباتیک</button>
+  <button onclick="filterByTopic('مدل‌های زبانی')">مدل‌های زبانی</button>
+  <button onclick="filterByTopic('پزشکی')">پزشکی</button>
+  <button onclick="filterByTopic('آموزش')">آموزش</button>
+  <button onclick="filterByTopic('امنیت و حریم خصوصی')">امنیت و حریم خصوصی</button>
+  <button onclick="filterByTopic('خلاقیت و هنر')">خلاقیت و هنر</button>
+  <button onclick="filterByTopic('قانون‌گذاری و اخلاق')">قانون‌گذاری و اخلاق</button>
+  <button onclick="filterByTopic('در صنعت بازی')">در صنعت بازی</button>
+  <button onclick="filterByTopic('بینایی ماشین')">بینایی ماشین</button>
+  <button onclick="filterByTopic('پیش‌بینی مالی')">پیش‌بینی مالی</button>
+</div>
+
+<header id="site-header">
+  <div class="header-content">
+    <h1 class="site-title">
+      <img src="images/ChatGPT.png" alt="آیکون AI" class="site-icon">
+      اخبار هوش مصنوعی
+    </h1>
+    <div id="search-container">
+      <input type="text" id="search-input" placeholder="جستجو در اخبار..." />
+      <button id="search-button">
+        <img src="images/icons8-search-48.png" alt="جستجو" width="60" height="60" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="news-container"></div>
+  <button onclick="loadMore()" id="load-more">نمایش بیشتر</button>
+
+  <section id="comment-section">
+    <h2>ارسال نظر شما</h2>
+    <form id="comment-form">
+      <input type="text" id="comment-name" placeholder="نام شما" required />
+      <textarea id="comment-text" placeholder="نظر خود را بنویسید..." required></textarea>
+      <button type="submit">ارسال نظر</button>
+    </form>
+    <h3>نظرات کاربران</h3>
+    <div id="comments-container"></div>
+  </section>
+</main>
+
+<div class="social-icons">
+  <a href="https://t.me/negarbhr" target="_blank">
+    <img src="images/icons8-telegram-48.png" alt="تلگرام" width="80">
+  </a>
+  <a href="https://instagram.com/__negar.b._" target="_blank">
+    <img src="images/icons8-instagram-logo-94.png" alt="اینستاگرام" width="80">
+  </a>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
