@@ -30,7 +30,7 @@ function renderNews(articles) {
 }
 
 function fetchNews(query = "هوش مصنوعی") {
-  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=fa&sortBy=publishedAt&apiKey=${apiKey}`;
+  const url = (`/api/news?q=${encodeURIComponent(query)}`)
   fetch(url)
     .then(res => res.json())
     .then(data => {

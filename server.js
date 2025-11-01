@@ -91,5 +91,34 @@ app.get("/", (req, res) => {
 });
 
 // (بقیه‌ی کدها مثل تنظیمات دیتابیس و روت‌های API بمونن همون‌طور که هست)
+const express = require("express");
+const fetch = require("node-fetch");
+const app = express();
+const PORT = process.env.PORT || 5500;
+
+app.use(express.static("public"));
+
+// مسیر واسطه برای دریافت اخبار
+app.get("/api/news", async (req, res) => {
+  try {
+    const query = req.query.q || "هوش مصنوعی";
+    const apiKey = "f62ecc7d91f543f59e791d8a38922016"; // همون کلید خودت
+    const response = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=fa&sortBy=publishedAt&apiKey=${apiKey}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "خطا در دریافت اخبار" });
+  }
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 app.listen(3000, () => console.log("🚀 Server running on http://localhost:3000"));
+const express = require("express");
+const PORT = process.env.PORT || 5500;
+
+app.use(express.static("public"));
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
