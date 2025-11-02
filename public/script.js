@@ -50,7 +50,7 @@ function fetchNews(query = "هوش مصنوعی") {
 
 // 📊 دریافت لایک‌ها از سرور
 function loadLikes() {
-  fetch("http://localhost:3000/likes")
+  fetch("/likes")
     .then(res => res.json())
     .then(data => {
       likesData = {};
@@ -89,7 +89,7 @@ const commentForm = document.getElementById("comment-form");
 const commentsContainer = document.getElementById("comments-container");
 
 function loadComments() {
-  fetch("http://localhost:3000/comments")
+  fetch("/comments")
     .then(res => res.json())
     .then(comments => {
       commentsContainer.innerHTML = "";
@@ -112,7 +112,7 @@ commentForm.addEventListener("submit", e => {
   const text = document.getElementById("comment-text").value.trim();
   if (!name || !text) return alert("لطفاً نام و متن نظر را وارد کنید.");
 
-  fetch("http://localhost:3000/comments", {
+  fetch("/comments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, text })
@@ -129,7 +129,7 @@ commentForm.addEventListener("submit", e => {
 document.addEventListener("click", e => {
   if (e.target.classList.contains("like-btn")) {
     const title = e.target.getAttribute("data-title");
-    fetch("http://localhost:3000/like", {
+    fetch("/like", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title })
