@@ -1,18 +1,23 @@
 const express = require("express");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
+const fetch = require("node-fetch");
+const path = require("path");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-// اتصال به دیتابیس
+// ✅ اتصال به دیتابیس
 const db = new sqlite3.Database("database.db", (err) => {
   if (err) console.error("❌ Database error:", err);
   else console.log("✅ Connected to SQLite database");
 });
 
-// ساخت جدول‌ها
+// ✅ ساخت جدول‌ها
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS comments (
@@ -80,30 +85,15 @@ app.get("/likes", (req, res) => {
     res.json(rows);
   });
 });
-const path = require("path");
 
-// ⬇️ این خط مهمه: مشخص می‌کنه فایل‌های استاتیک از پوشه‌ی public خونده بشن
-app.use(express.static(path.join(__dirname, "public")));
-
-// وقتی وارد صفحه اصلی می‌شه، فایل index.html رو بفرست
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// (بقیه‌ی کدها مثل تنظیمات دیتابیس و روت‌های API بمونن همون‌طور که هست)
-const express = require("express");
-const fetch = require("node-fetch");
-const app = express();
-const PORT = process.env.PORT || 5500;
-
-app.use(express.static("public"));
-
-// مسیر واسطه برای دریافت اخبار
+// 🌐 مسیر دریافت اخبار
 app.get("/api/news", async (req, res) => {
   try {
     const query = req.query.q || "هوش مصنوعی";
-    const apiKey = "f62ecc7d91f543f59e791d8a38922016"; // همون کلید خودت
-    const response = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=fa&sortBy=publishedAt&apiKey=${apiKey}`);
+    const apiKey = "f62ecc7d91f543f59e791d8a38922016"; // کلید NewsAPI
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=fa&sortBy=publishedAt&apiKey=${apiKey}`
+    );
     const data = await response.json();
     res.json(data);
   } catch (error) {
@@ -111,14 +101,10 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-app.listen(3000, () => console.log("🚀 Server running on http://localhost:3000"));
-const express = require("express");
-const PORT = process.env.PORT || 5500;
-
-app.use(express.static("public"));
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// 🏠 ارسال فایل اصلی سایت
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+// 🚀 اجرای سرور
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
