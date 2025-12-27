@@ -1,37 +1,53 @@
-const apiKey = "f62ecc7d91f543f59e791d8a38922016";
 const newsContainer = document.getElementById("news-container");
 let allArticles = [];
 let visibleCount = 6;
 let likesData = {};
 
+// ================== render news ==================
 function renderNews(articles) {
   newsContainer.innerHTML = "";
+
   articles.slice(0, visibleCount).forEach(article => {
-    const title = article.title;
-    const likes = likesData[title] || 0;
+    const likes = likesData[article.title] || 0;
+
     const card = document.createElement("div");
     card.className = "news-card";
+
     card.innerHTML = `
-      <img src="${article.urlToImage || 'https://via.placeholder.com/300x180?text=No+Image'}" />
+      <img src="${article.urlToImage || 'https://via.placeholder.com/300x180'}">
+
       <div class="news-card-content">
         <h3>${article.title}</h3>
-        <p>${article.description || ''}</p>
-        <div class="like-section">
-          <button class="like-btn" data-title="${title}">👍 <span>${likes}</span></button>
+        <p>${article.description || ""}</p>
+
+        <div style="display:flex; gap:10px; margin:10px 0;">
+          <button class="like-btn" data-title="${article.title}">
+            👍 <span>${likes}</span>
+          </button>
+
+          <button class="fav-btn"
+            data-title="${article.title}"
+            data-url="${article.url}"
+            data-image="${article.urlToImage || ''}"
+            data-description="${article.description || ''}">
+            ⭐ علاقه‌مندی
+          </button>
         </div>
+
         <a href="${article.url}" target="_blank">بیشتر بخوانید</a>
       </div>
     `;
+
     newsContainer.appendChild(card);
   });
 
-  const loadMoreBtn = document.getElementById("load-more");
-  loadMoreBtn.style.display = (visibleCount >= articles.length) ? "none" : "block";
+  document.getElementById("load-more").style.display =
+    visibleCount >= articles.length ? "none" : "block";
 }
 
+// ================== fetch news ==================
 function fetchNews(query = "هوش مصنوعی") {
-  const url = (`/api/news?q=${encodeURIComponent(query)}`)
-  fetch(url)
+  fetch(`/api/news?q=${encodeURIComponent(query)}`)
     .then(res => res.json())
     .then(data => {
       if (data.status === "ok") {
@@ -39,16 +55,15 @@ function fetchNews(query = "هوش مصنوعی") {
         visibleCount = 6;
         loadLikes();
       } else {
-        newsContainer.innerHTML = `<p>خطا: ${data.message}</p>`;
+        newsContainer.innerHTML = "<p>خطا در دریافت اخبار</p>";
       }
     })
-    .catch(err => {
-      newsContainer.innerHTML = `<p>خطا در دریافت اخبار</p>`;
-      console.error(err);
+    .catch(() => {
+      newsContainer.innerHTML = "<p>خطا در دریافت اخبار</p>";
     });
 }
 
-// 📊 دریافت لایک‌ها از سرور
+// ================== likes ==================
 function loadLikes() {
   fetch("/likes")
     .then(res => res.json())
@@ -59,32 +74,35 @@ function loadLikes() {
     });
 }
 
+// ================== load more ==================
 function loadMore() {
   visibleCount += 6;
   renderNews(allArticles);
 }
 
+// ================== filter ==================
 function filterByTopic(topic) {
   fetchNews(topic);
 }
 
+// ================== search ==================
 const searchInput = document.getElementById("search-input");
 const searchButton = document.getElementById("search-button");
 
 searchButton.addEventListener("click", () => {
-  const query = searchInput.value.trim();
-  if (query) fetchNews(query);
+  if (searchInput.value.trim()) {
+    fetchNews(searchInput.value.trim());
+  }
 });
 
 searchInput.addEventListener("keypress", e => {
   if (e.key === "Enter") {
     e.preventDefault();
-    const query = searchInput.value.trim();
-    if (query) fetchNews(query);
+    fetchNews(searchInput.value.trim());
   }
 });
 
-// 🎯 --- فرم ارسال نظر ---
+// ================== comments ==================
 const commentForm = document.getElementById("comment-form");
 const commentsContainer = document.getElementById("comments-container");
 
@@ -108,9 +126,14 @@ function loadComments() {
 
 commentForm.addEventListener("submit", e => {
   e.preventDefault();
+
   const name = document.getElementById("comment-name").value.trim();
   const text = document.getElementById("comment-text").value.trim();
-  if (!name || !text) return alert("لطفاً نام و متن نظر را وارد کنید.");
+
+  if (!name || !text) {
+    alert("نام و نظر را وارد کنید");
+    return;
+  }
 
   fetch("/comments", {
     method: "POST",
@@ -118,33 +141,48 @@ commentForm.addEventListener("submit", e => {
     body: JSON.stringify({ name, text })
   })
     .then(res => res.json())
-    .then(data => {
-      alert(data.message || "نظر شما ثبت شد ✅");
+    .then(() => {
       commentForm.reset();
       loadComments();
     });
 });
 
-// 🎯 --- دکمه لایک ---
+// ================== click events (like + favorite) ==================
 document.addEventListener("click", e => {
-  if (e.target.classList.contains("like-btn")) {
-    const title = e.target.getAttribute("data-title");
+  // 👍 like
+  if (e.target.closest(".like-btn")) {
+    const btn = e.target.closest(".like-btn");
+    const title = btn.dataset.title;
+
     fetch("/like", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title })
     }).then(() => loadLikes());
   }
+
+  // ⭐ favorite
+  if (e.target.closest(".fav-btn")) {
+    const btn = e.target.closest(".fav-btn");
+
+    fetch("/favorites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: btn.dataset.title,
+        url: btn.dataset.url,
+        image: btn.dataset.image,
+        description: btn.dataset.description
+      })
+    })
+      .then(res => res.json())
+      .then(() => alert("⭐ به علاقه‌مندی‌ها اضافه شد"));
+  }
 });
 
-window.onload = () => {
-  fetchNews();
-  loadComments();
-};
-
-window.loadMore = loadMore;
-window.filterByTopic = filterByTopic;
-
+// ================== menu ==================
 const menuToggle = document.getElementById("menu-toggle");
 const sidebar = document.getElementById("sidebar");
-menuToggle.addEventListener("click", () => sidebar.classList.toggle("active"));
+menuToggle.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
+});
