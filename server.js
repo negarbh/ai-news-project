@@ -18,44 +18,83 @@ const db = new sqlite3.Database("database.db");
 // tables
 db.serialize(() => {
   db.run(`
-    CREATE TABLE IF NOT EXISTS favorites (
+    CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      url TEXT,
-      image TEXT,
-      description TEXT
+      name TEXT,
+      text TEXT,
+      date TEXT
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS likes (
+      title TEXT PRIMARY KEY,
+      count INTEGER DEFAULT 0
     )
   `);
 });
 
-// add favorite
-app.post("/favorites", (req, res) => {
-  const { title, url, image, description } = req.body;
+// -------- NEWS API (خیلی مهم: بدون language=fa) --------
+app.get("/api/news", async (req, res) => {
+  try {
+    const query = req.query.q || "artificial intelligence";
+    const apiKey = "API_KEY_خودت";
+
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?q=${encodeURIComponent(
+        query
+      )}&sortBy=publishedAt&apiKey=${apiKey}`
+    );
+
+    const data = await response.json();
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: "خطا در دریافت اخبار" });
+  }
+});
+
+// -------- COMMENTS --------
+app.post("/comments", (req, res) => {
+  const { name, text } = req.body;
+  const date = new Date().toLocaleString("fa-IR");
+
   db.run(
-    `INSERT INTO favorites (title, url, image, description) VALUES (?, ?, ?, ?)`,
-    [title, url, image, description],
-    () => res.json({ message: "saved" })
+    `INSERT INTO comments (name, text, date) VALUES (?, ?, ?)`,
+    [name, text, date],
+    () => res.json({ message: "نظر ثبت شد" })
   );
 });
 
-// get favorites
-app.get("/favorites", (req, res) => {
-  db.all(`SELECT * FROM favorites ORDER BY id DESC`, [], (err, rows) => {
+app.get("/comments", (req, res) => {
+  db.all(`SELECT * FROM comments ORDER BY id DESC`, [], (err, rows) => {
     res.json(rows);
   });
 });
 
-// news api
-app.get("/api/news", async (req, res) => {
-  const q = req.query.q || "هوش مصنوعی";
-  const apiKey = "f62ecc7d91f543f59e791d8a38922016";
-  const r = await fetch(
-    `https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&apiKey=${apiKey}`
+// -------- LIKES --------
+app.post("/like", (req, res) => {
+  const { title } = req.body;
+
+  db.run(
+    `INSERT INTO likes (title, count)
+     VALUES (?, 1)
+     ON CONFLICT(title) DO UPDATE SET count = count + 1`,
+    [title],
+    () => res.json({ message: "لایک شد" })
   );
-  const data = await r.json();
-  res.json(data);
+});
+
+app.get("/likes", (req, res) => {
+  db.all(`SELECT * FROM likes`, [], (err, rows) => {
+    res.json(rows);
+  });
+});
+
+// main page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => {
-  console.log("Server running on", PORT);
+  console.log("Server running on port", PORT);
 });

@@ -1,188 +1,116 @@
 const newsContainer = document.getElementById("news-container");
+const loadMoreBtn = document.getElementById("load-more");
+const searchBtn = document.getElementById("search-btn");
+const searchInput = document.getElementById("search-input");
+
 let allArticles = [];
 let visibleCount = 6;
 let likesData = {};
 
-// ================== render news ==================
-function renderNews(articles) {
+function renderNews() {
   newsContainer.innerHTML = "";
 
-  articles.slice(0, visibleCount).forEach(article => {
+  allArticles.slice(0, visibleCount).forEach(article => {
     const likes = likesData[article.title] || 0;
 
-    const card = document.createElement("div");
-    card.className = "news-card";
-
-    card.innerHTML = `
-      <img src="${article.urlToImage || 'https://via.placeholder.com/300x180'}">
-
-      <div class="news-card-content">
-        <h3>${article.title}</h3>
-        <p>${article.description || ""}</p>
-
-        <div style="display:flex; gap:10px; margin:10px 0;">
-          <button class="like-btn" data-title="${article.title}">
-            👍 <span>${likes}</span>
-          </button>
-
-          <button class="fav-btn"
-            data-title="${article.title}"
-            data-url="${article.url}"
-            data-image="${article.urlToImage || ''}"
-            data-description="${article.description || ''}">
-            ⭐ علاقه‌مندی
-          </button>
-        </div>
-
-        <a href="${article.url}" target="_blank">بیشتر بخوانید</a>
-      </div>
+    const div = document.createElement("div");
+    div.className = "news-card";
+    div.innerHTML = `
+      <h3>${article.title}</h3>
+      <p>${article.description || ""}</p>
+      <button class="like-btn" data-title="${article.title}">👍 ${likes}</button>
+      <a href="${article.url}" target="_blank">بیشتر بخوانید</a>
     `;
-
-    newsContainer.appendChild(card);
+    newsContainer.appendChild(div);
   });
 
-  document.getElementById("load-more").style.display =
-    visibleCount >= articles.length ? "none" : "block";
+  loadMoreBtn.style.display =
+    visibleCount >= allArticles.length ? "none" : "block";
 }
 
-// ================== fetch news ==================
 function fetchNews(query = "هوش مصنوعی") {
   fetch(`/api/news?q=${encodeURIComponent(query)}`)
     .then(res => res.json())
     .then(data => {
-      if (data.status === "ok") {
-        allArticles = data.articles;
-        visibleCount = 6;
-        loadLikes();
-      } else {
-        newsContainer.innerHTML = "<p>خطا در دریافت اخبار</p>";
+      console.log("DATA FROM SERVER:", data);
+
+      if (!data || !data.articles) {
+        newsContainer.innerHTML = "<p>هیچ خبری دریافت نشد</p>";
+        return;
       }
+
+      allArticles = data.articles;
+      visibleCount = 6;
+      renderNews(allArticles);
     })
-    .catch(() => {
+    .catch(err => {
+      console.error("FETCH ERROR:", err);
       newsContainer.innerHTML = "<p>خطا در دریافت اخبار</p>";
     });
 }
 
-// ================== likes ==================
 function loadLikes() {
   fetch("/likes")
     .then(res => res.json())
     .then(data => {
       likesData = {};
-      data.forEach(item => likesData[item.title] = item.count);
-      renderNews(allArticles);
+      data.forEach(l => likesData[l.title] = l.count);
+      renderNews();
     });
 }
 
-// ================== load more ==================
-function loadMore() {
+loadMoreBtn.onclick = () => {
   visibleCount += 6;
-  renderNews(allArticles);
-}
+  renderNews();
+};
 
-// ================== filter ==================
+searchBtn.onclick = () => {
+  if (searchInput.value) fetchNews(searchInput.value);
+};
+
 function filterByTopic(topic) {
   fetchNews(topic);
 }
 
-// ================== search ==================
-const searchInput = document.getElementById("search-input");
-const searchButton = document.getElementById("search-button");
-
-searchButton.addEventListener("click", () => {
-  if (searchInput.value.trim()) {
-    fetchNews(searchInput.value.trim());
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("like-btn")) {
+    fetch("/like", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: e.target.dataset.title })
+    }).then(loadLikes);
   }
 });
 
-searchInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    fetchNews(searchInput.value.trim());
-  }
-});
-
-// ================== comments ==================
-const commentForm = document.getElementById("comment-form");
-const commentsContainer = document.getElementById("comments-container");
+// comments
+const form = document.getElementById("comment-form");
+const commentsDiv = document.getElementById("comments");
 
 function loadComments() {
   fetch("/comments")
     .then(res => res.json())
-    .then(comments => {
-      commentsContainer.innerHTML = "";
-      comments.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "comment-card";
-        div.innerHTML = `
-          <h4>${c.name}</h4>
-          <p>${c.text}</p>
-          <div class="comment-date">${c.date}</div>
-        `;
-        commentsContainer.appendChild(div);
+    .then(data => {
+      commentsDiv.innerHTML = "";
+      data.forEach(c => {
+        commentsDiv.innerHTML += `<p><b>${c.name}:</b> ${c.text}</p>`;
       });
     });
 }
 
-commentForm.addEventListener("submit", e => {
+form.onsubmit = e => {
   e.preventDefault();
-
-  const name = document.getElementById("comment-name").value.trim();
-  const text = document.getElementById("comment-text").value.trim();
-
-  if (!name || !text) {
-    alert("نام و نظر را وارد کنید");
-    return;
-  }
-
   fetch("/comments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, text })
-  })
-    .then(res => res.json())
-    .then(() => {
-      commentForm.reset();
-      loadComments();
-    });
-});
-
-// ================== click events (like + favorite) ==================
-document.addEventListener("click", e => {
-  // 👍 like
-  if (e.target.closest(".like-btn")) {
-    const btn = e.target.closest(".like-btn");
-    const title = btn.dataset.title;
-
-    fetch("/like", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title })
-    }).then(() => loadLikes());
-  }
-
-  // ⭐ favorite
-  if (e.target.closest(".fav-btn")) {
-    const btn = e.target.closest(".fav-btn");
-
-    fetch("/favorites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: btn.dataset.title,
-        url: btn.dataset.url,
-        image: btn.dataset.image,
-        description: btn.dataset.description
-      })
+    body: JSON.stringify({
+      name: name.value,
+      text: text.value
     })
-      .then(res => res.json())
-      .then(() => alert("⭐ به علاقه‌مندی‌ها اضافه شد"));
-  }
-});
+  }).then(() => {
+    form.reset();
+    loadComments();
+  });
+};
 
-// ================== menu ==================
-const menuToggle = document.getElementById("menu-toggle");
-const sidebar = document.getElementById("sidebar");
-menuToggle.addEventListener("click", () => {
-  sidebar.classList.toggle("active");
-});
+fetchNews();
+loadComments();
